@@ -5,43 +5,37 @@ _start:
     mov eax, 0              ; start from 0
 
 generate:
-    cmp eax, 21             ; stop at 20
-    jge end
+    cmp eax, 21             ; stop when eax == 21
+    jge exit
 
     mov edx, eax
-    and edx, 1              ; check if odd/even
+    and edx, 1              ; check if odd
     cmp edx, 0
     jne skip_print
 
-    ; --- Convert eax (0-20) to ASCII ---
-    mov ecx, eax
-    mov edi, 0              ; digit counter
-convert_loop:
+    ; --- convert eax to string ---
+    mov ecx, eax            ; copy number to ecx
+    mov esi, tmp + 4        ; point to end of buffer
+    mov byte [esi], 0       ; null terminator
+
+convert:
+    dec esi
     xor edx, edx
     mov ebx, 10
-    div ebx                ; divide eax by 10 → quotient in eax, remainder in edx
+    div ebx                 ; eax /= 10, remainder in edx
     add dl, '0'
-    mov [tmp + edi], dl
-    inc edi
+    mov [esi], dl
     test eax, eax
-    jnz convert_loop
+    jnz convert
 
-    ; --- Print digits in reverse ---
-print_digits:
-    dec edi
-    mov al, [tmp + edi]
-    mov [char], al
-
+    ; --- print string ---
     mov eax, 4
     mov ebx, 1
-    mov ecx, char
-    mov edx, 1
+    mov ecx, esi
+    mov edx, tmp + 4 - esi  ; length of number string
     int 0x80
 
-    cmp edi, 0
-    jne print_digits
-
-    ; Print newline
+    ; --- print newline ---
     mov eax, 4
     mov ebx, 1
     mov ecx, newline
@@ -52,13 +46,12 @@ skip_print:
     inc eax
     jmp generate
 
-end:
+exit:
     mov eax, 1
     int 0x80
 
 section .bss
-    tmp resb 4             ; to hold 4 digits max
-    char resb 1
+    tmp resb 5              ; buffer for number string
 
 section .data
     newline db 10
