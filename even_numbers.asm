@@ -2,44 +2,63 @@ section .text
     global _start
 
 _start:
-    mov eax, 0              ; Start from 0
+    mov eax, 0              ; start from 0
 
 generate:
+    cmp eax, 21             ; stop at 20
+    jge end
+
     mov edx, eax
-    and edx, 1              ; Check if even
+    and edx, 1              ; check if odd/even
     cmp edx, 0
-    jne skip_print          ; If odd, skip
+    jne skip_print
 
-    ; Convert number to ASCII
+    ; --- Convert eax (0-20) to ASCII ---
     mov ecx, eax
-    add ecx, '0'
-    mov [tmp], cl
+    mov edi, 0              ; digit counter
+convert_loop:
+    xor edx, edx
+    mov ebx, 10
+    div ebx                ; divide eax by 10 → quotient in eax, remainder in edx
+    add dl, '0'
+    mov [tmp + edi], dl
+    inc edi
+    test eax, eax
+    jnz convert_loop
 
-    ; Print character
+    ; --- Print digits in reverse ---
+print_digits:
+    dec edi
+    mov al, [tmp + edi]
+    mov [char], al
+
     mov eax, 4
     mov ebx, 1
-    mov ecx, tmp
+    mov ecx, char
     mov edx, 1
     int 0x80
+
+    cmp edi, 0
+    jne print_digits
 
     ; Print newline
     mov eax, 4
     mov ebx, 1
-    mov ecx, space
+    mov ecx, newline
     mov edx, 1
     int 0x80
 
 skip_print:
     inc eax
-    cmp eax, 21             ; Up to 20
-    jl generate
+    jmp generate
 
-    ; Exit syscall
+end:
     mov eax, 1
     int 0x80
 
 section .bss
-    tmp resb 1
+    tmp resb 4             ; to hold 4 digits max
+    char resb 1
 
 section .data
-    space db 10             ; Newline (ASCII 10)
+    newline db 10
