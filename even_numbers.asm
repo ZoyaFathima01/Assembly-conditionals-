@@ -1,57 +1,56 @@
+section .data
+    newline db 10
+
+section .bss
+    buf resb 3        ; up to 2 digits and '\0'
+
 section .text
     global _start
 
 _start:
-    mov eax, 0              ; start from 0
+    mov esi, 0            ; esi will be our counter: 0, 2, ..., 20
 
-generate:
-    cmp eax, 21             ; stop when eax == 21
-    jge exit
+print_loop:
+    cmp esi, 22           ; stop after printing 20
+    jge done
 
-    mov edx, eax
-    and edx, 1              ; check if odd
-    cmp edx, 0
-    jne skip_print
+    ; --- convert esi to string in buf ---
+    mov eax, esi
+    mov edi, buf+2        ; point to end of buffer
+    mov byte [edi], 0     ; null terminator
 
-    ; --- convert eax to string ---
-    mov ecx, eax            ; copy number to ecx
-    mov esi, tmp + 4        ; point to end of buffer
-    mov byte [esi], 0       ; null terminator
-
-convert:
-    dec esi
-    xor edx, edx
     mov ebx, 10
-    div ebx                 ; eax /= 10, remainder in edx
-    add dl, '0'
-    mov [esi], dl
-    test eax, eax
-    jnz convert
 
-    ; --- print string ---
+    dec edi
+    xor edx, edx
+    div ebx               ; eax = eax / 10, edx = remainder
+    add dl, '0'
+    mov [edi], dl
+
+    cmp eax, 0
+    je .print_one_digit
+    dec edi
+    add al, '0'
+    mov [edi], al
+
+.print_one_digit:
     mov eax, 4
     mov ebx, 1
-    mov ecx, esi
-    mov edx, tmp + 4 - esi  ; length of number string
+    mov ecx, edi
+    mov edx, buf+2
+    sub edx, edi
     int 0x80
 
-    ; --- print newline ---
+    ; print newline
     mov eax, 4
     mov ebx, 1
     mov ecx, newline
     mov edx, 1
     int 0x80
 
-skip_print:
-    inc eax
-    jmp generate
+    add esi, 2            ; next even number
+    jmp print_loop
 
-exit:
+done:
     mov eax, 1
     int 0x80
-
-section .bss
-    tmp resb 5              ; buffer for number string
-
-section .data
-    newline db 10
